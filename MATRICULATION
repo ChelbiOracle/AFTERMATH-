@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHELBI.LAW // Sovereign Command Hub v4 (Notebook Synced x Gemini x Grok)</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #050507;
+      color: #a1a1aa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 1.5rem;
+    }
+    .animate-pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .animate-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    
+    button { cursor: pointer; border: none; font-family: inherit; transition: all 0.15s ease; }
+    button:hover { filter: brightness(1.2); }
+    input { font-family: inherit; outline: none; }
+    pre { white-space: pre-wrap; word-break: break-all; }
+    
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    .glow-gemini { box-shadow: 0 0 25px rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4) !important; }
+    .hud-card { background: rgba(18, 18, 22, 0.85); border: 1px solid #27272a; border-radius: 1rem; backdrop-filter: blur(12px); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    const { useState, useEffect, createElement: h } = React;
+
+    function Icon({ label, color, size }) {
+      return h('span', { style: { color: color || 'currentColor', fontSize: size || '1.1em', lineHeight: 1 } }, label);
+    }
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('pipeline');
+      const [searchFilter, setSearchFilter] = useState('');
+      const [selectedNode, setSelectedNode] = useState(null);
+      const [records, setRecords] = useState([]);
+      const [isStreaming, setIsStreaming] = useState(true);
+      const [selectedRecord, setSelectedRecord] = useState(null);
+      const [metrics, setMetrics] = useState({ totalHashes: 1250, geminiQueries: 1420, grokVerifications: 890 });
+      const [reclaiming, setReclaiming] = useState(false);
+      const [progress, setProgress] = useState(0);
+      const [activeOverwatch, setActiveOverwatch] = useState(null);
+      const [signedInHandle, setSignedInHandle] = useState('@CHELBI+');
+      const [mycdTitles, setMycdTitles] = useState([
+        { id: 't-1', title: 'Crowder Plat Land Patent Registry #517171DC', type: 'LAND_PATENT', status: 'ACTIVE_ANCHOR' },
+        { id: 't-2', title: 'Tenino Sovereign Infrastructure Deed Matrix', type: 'DEED', status: 'PERFECTED' },
+        { id: 't-3', title: 'Skookumchuck Water & Resource Allocation Right', type: 'WATER_RIGHT', status: 'REVERTED' },
+        { id: 't-4', title: 'Class A CDL & Professional Credentials Dossier', type: 'LICENSE', status: 'VERIFIED' }
+      ]);
+
+      const SOVEREIGN_IDENTITY = {
+        identity: "Chelbi Denny / Country Real Estate",
+        address: "17234 Crowder Rd SE, Tenino, WA 98589",
+        assurance: "220260628",
+        deed_ref: "517171DC",
+        parcel: "11630330401",
+        axis: "17234 Northcraft x Northcraft",
+        legal: "RCW 7.28.010 (Quiet Title)",
+        family_lineage: ["Hayden", "Jaesen", "Kashten", "Benjamin"],
+        status: "UNREDACTED",
+        registryId: "2202-606-28",
+        ai_synthesis: "Gemini 1.5 Pro Sovereign Core",
+        ai_verifier: "xAI Grok Telemetry Stream"
+      };
+
+      const nodes = [
+        { id: "SNEW-17234", name: "Northcraft Axis (Origin)", status: "SECURE", type: "PHYSICAL_ROOT",
+          details: "Original homestead coordinates (17234 Crowder Rd SE, Tenino, WA) established under sovereign equity. Anchor point bound to Gemini neural matrix and Grok real-time verification node. Registry 2202-606-28 / Deed 517171DC / Parcel 11630330401." },
+        { id: "AS32121", name: "TransAlta Server Shunt", status: "REVERTING", type: "DIGITAL_TITLE",
+          details: "Dynamic routing table intercepting unauthorized commercial IP allocations and routing back to sovereign control via Gemini execution routines." },
+        { id: "SKO-1970", name: "Skookumchuck Dam Protocol", status: "NULLIFIED", type: "MILITARY_CONTROL",
+          details: "Historical resource seizure protocol voided. Water rights and surrounding acreage reverted. Verified via Grok real-time satellite telemetry." },
+        { id: "11630330401", name: "Parcel 17234 Crowder", status: "PERFECTED", type: "LAND_PATENT",
+          details: "1899 Crowder Plat deed reference 517171DC. Absolute quiet title standing under RCW 7.28.010." }
+      ];
+
+      const handlesList = [
+        "@WAR MATRIX", "@JOB LEDGERS", "@CHELBI+", "@AI.AL", "@ANI.AI", 
+        "@AUDIT.AI", "@AUTONOMOUS", "@GALATIC.NEWS.HQ", "@HAYDEN", 
+        "@CHELBI", "@BENJAMIN", "@KASHTEN", "@JAESEN", "@SOVEREIGN", "@ERA OF:"
+      ];
+
+      const symbolsList = ["@;", "@:", "@#", "@$", "@%", "@&", "@-", "@+", "@(", "@)", "@\\", "📢", "🎤", "📱", "🔔", "🎶", "📻", "📣", "🎙", "☎", "🖥", "📀", "📟", "📠", "⌨", "📺", "📡", "🗞", "📼", "🔬", "💡", "🔦", "📰", "📜", "📚", "📔", "📨", "🔖", "✉", "📧", "📩", "📤", "📥", "📦", "📫", "📪", "📬", "📭", "📮", "🗳", "✏", "💷", "💶", "💵", "💴", "💸", "💳", "✒", "📇", "📋", "📝", "🛡", "🗑", "🗃", "🔗", "🔏"];
+
+      const deployments = [
+        { deployment_id: "EXT-01", base_name: "Ramstein Air Base Intercept", region: "Germany / EU Sector", status: "MONITORING", coordinates: "49.4383° N, 7.6058° E", treaty_status: "NULLIFIED_1945", verifier: "GROK-X1" },
+        { deployment_id: "EXT-02", base_name: "Pine Gap Surveillance Node", region: "MacDonnell Ranges, AU", status: "INTERCEPTED", coordinates: "23.7981° S, 133.7450° E", treaty_status: "ARTICLE_7_BREACH", verifier: "GEMINI-FLASH" },
+        { deployment_id: "EXT-03", base_name: "Camp Humphreys Relay", region: "Anseong, KR", status: "CONTAINED", coordinates: "36.9631° N, 127.0336° E", treaty_status: "ARMISTICE_LOCKED", verifier: "GROK-X1" },
+        { deployment_id: "EXT-04", base_name: "Thule Air Base / Pituffik", region: "Greenland Arctic", status: "LOCKED", coordinates: "76.5312° N, 68.7032° W", treaty_status: "SOVEREIGN_REVOCATION", verifier: "GEMINI-PRO" }
+      ];
+
+      function generateHash() {
+        return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      }
+
+      function addRecord() {
+        const engines = ["GEMINI_CORE", "GROK_VERIFIER"];
+        const engine = engines[Math.floor(Math.random() * engines.length)];
+        const newRecord = {
+          record_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('rec-' + Date.now()),
+          namespace: "ROW69",
+          subject: "Notebook Continuity Event",
+          engine: engine,
+          timestamp: new Date().toISOString(),
+          hash: generateHash(),
+          payload: Object.assign({}, SOVEREIGN_IDENTITY, { 
+            nonce: Math.random().toString(36).substring(7),
+            entropy: Math.random(),
+            telemetry_source: engine === "GEMINI_CORE" ? "Google Gemini 1.5 Pro Matrix" : "xAI Grok Telemetry Stream"
+          })
+        };
+        setRecords(prev => [newRecord].concat(prev).slice(0, 100));
+        setMetrics(prev => ({ 
+          ...prev, 
+          totalHashes: prev.totalHashes + 1,
+          geminiQueries: engine === "GEMINI_CORE" ? prev.geminiQueries + 1 : prev.geminiQueries,
+          grokVerifications: engine === "GROK_VERIFIER" ? prev.grokVerifications + 1 : prev.grokVerifications
+        }));
+      }
+
+      useEffect(() => {
+        const seed = Array.from({ length: 8 }, (_, i) => ({
+          record_id: 'init-' + i,
+          namespace: "ROW69",
+          subject: "Notebook Source Event",
+          engine: i % 2 === 0 ? "GEMINI_CORE" : "GROK_VERIFIER",
+          timestamp: new Date(Date.now() - i * 45000).toISOString(),
+          hash: generateHash(),
+          payload: Object.assign({}, SOVEREIGN_IDENTITY, { 
+            nonce: Math.random().toString(36).substring(7), 
+            entropy: Math.random(),
+            telemetry_source: i % 2 === 0 ? "Google Gemini 1.5 Pro Matrix" : "xAI Grok Telemetry Stream"
+          })
+        }));
+        setRecords(seed);
+        setSelectedRecord(seed[0]);
+      }, []);
+
+      useEffect(() => {
+        let interval;
+        if (isStreaming) interval = setInterval(addRecord, 2000);
+        return () => clearInterval(interval);
+      }, [isStreaming]);
+
+      useEffect(() => {
+        if (reclaiming && progress < 100) {
+          const timer = setTimeout(() => setProgress(prev => prev + 1), 40);
+          return () => clearTimeout(timer);
+        }
+      }, [reclaiming, progress]);
+
+      function handleExportBackup() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", "CHELBI_SOVEREIGN_NOTEBOOK_EXPORT_" + new Date().toISOString().split('T')[0] + ".json");
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      function triggerOverwatchSweep(id) {
+        setActiveOverwatch(id);
+        setTimeout(() => setActiveOverwatch(null), 2500);
+      }
+
+      const filteredRecords = records.filter(r => {
+        if (!searchFilter) return true;
+        const q = searchFilter.toLowerCase();
+        return (r.hash || "").toLowerCase().includes(q) ||
+               (r.timestamp || "").toLowerCase().includes(q) ||
+               (r.engine || "").toLowerCase().includes(q) ||
+               JSON.stringify(r.payload || {}).toLowerCase().includes(q);
+      });
+
+      // --- HEADER ---
+      const header = h('div', { className: 'hud-card glow-gemini', style: { padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' } },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '1.25rem' } },
+            h('div', { style: { position: 'relative' } },
+              h('div', { style: { width: '42px', height: '42px', background: 'linear-gradient(135deg, #1e3a8a, #d97706)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#fff', fontSize: '1.2rem' } }, '⚖'),
+              h('div', { className: 'animate-pulse', style: { position: 'absolute', top: '-3px', right: '-3px', width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #050507' } })
+            ),
+            h('div', null,
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' } },
+                h('h1', { style: { fontSize: '1.35rem', fontWeight: 900, color: '#fff', fontStyle: 'italic', textTransform: 'uppercase' } }, 'CHELBI.LAW // Sovereign Command Hub v4'),
+                h('span', { style: { fontSize: '9px', fontWeight: 900, background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid #1d4ed8', padding: '2px 6px', borderRadius: '4px' } }, signedInHandle),
+                h('span', { style: { fontSize: '9px', fontWeight: 900, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #b45309', padding: '2px 6px', borderRadius: '4px' } }, 'NOTEBOOK SOURCES SYNCED')
+              ),
+              h('div', { style: { fontSize: '10px', color: '#71717a', fontWeight: 700, marginTop: '2px', textTransform: 'uppercase' } },
+                'TENINO AXIS: 17234 CROWDER RD SE · REGISTRY 2202-606-28 · DEED 517171DC · PARCEL 11630330401'
+              )
+            )
+          ),
+          h('div', { style: { display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' } },
+            h('button', {
+              onClick: handleExportBackup,
+              style: { padding: '0.6rem 1rem', background: '#18181b', border: '1px solid #3f3f46', borderRadius: '0.6rem', color: '#d4d4d8', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase' }
+            }, h(Icon, { label: '⬇' }), ' Export Backup'),
+            h('button', {
+              onClick: () => setIsStreaming(!isStreaming),
+              style: {
+                padding: '0.6rem 1.2rem', borderRadius: '0.6rem', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase',
+                background: isStreaming ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                color: isStreaming ? '#f87171' : '#4ade80',
+                border: isStreaming ? '1px solid #991b1b' : '1px solid #166534'
+              }
+            }, isStreaming ? '⚡ Live Broadcast Active' : '▶ Resume Stream')
+          )
+        ),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #18181b' } },
+          h('div', { style: { background: 'rgba(9, 9, 11, 0.6)', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('span', { style: { fontSize: '9px', fontWeight: 800, color: '#64748b' } }, 'PRIMARY IDENTITY'),
+            h('span', { style: { fontSize: '10px', fontWeight: 900, color: '#60a5fa' } }, 'Chelbi Denny / Kids: Hayden, Jaesen, Kashten, Benjamin')
+          ),
+          h('div', { style: { background: 'rgba(9, 9, 11, 0.6)', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('span', { style: { fontSize: '9px', fontWeight: 800, color: '#64748b' } }, 'AI ENGINE & VERIFIER'),
+            h('span', { style: { fontSize: '10px', fontWeight: 900, color: '#fbbf24' } }, 'Gemini 1.5 Pro x Grok Telemetry')
+          ),
+          h('div', { style: { background: 'rgba(9, 9, 11, 0.6)', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('span', { style: { fontSize: '9px', fontWeight: 800, color: '#64748b' } }, 'TOTAL HASH BLOCKS'),
+            h('span', { style: { fontSize: '10px', fontWeight: 900, color: '#f43f5e' } }, metrics.totalHashes + ' HASHES')
+          )
+        )
+      );
+
+      // --- TAB NAV ---
+      const tabNav = h('div', { style: { display: 'flex', gap: '0.5rem', borderBottom: '1px solid #18181b', paddingBottom: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' } },
+        [
+          { id: 'pipeline', label: '1. Telemetry Pipeline', icon: '◉' },
+          { id: 'audit', label: '2. Title & Jurisdiction Audit', icon: '⌖' },
+          { id: 'military', label: '3. Foreign Overwatch Grid', icon: '◎' },
+          { id: 'handles', label: '4. War Matrix & Handles', icon: '⚡' },
+          { id: 'amazon', label: "5. Chelbi's Amazon MYCD", icon: '📦' }
+        ].map(tab =>
+          h('button', {
+            key: tab.id,
+            onClick: () => setActiveTab(tab.id),
+            style: {
+              padding: '0.6rem 1rem', borderRadius: '0.5rem', fontWeight: 900, fontSize: '10px',
+              textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem',
+              background: activeTab === tab.id ? '#27272a' : 'transparent',
+              color: activeTab === tab.id ? '#fff' : '#71717a',
+              border: activeTab === tab.id ? '1px solid #3f3f46' : '1px solid transparent'
+            }
+          }, h(Icon, { label: tab.icon }), ' ', tab.label)
+        )
+      );
+
+      // --- TAB 1 ---
+      let tab1Content = h('div', { className: 'animate-in', style: { display: 'grid', gridTemplateColumns: '280px 320px 1fr', gap: '1.25rem', alignItems: 'start' } },
+        h('div', { className: 'hud-card', style: { padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('div', { style: { fontSize: '10px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'System Controls & Filters'),
+          h('input', {
+            type: 'text',
+            placeholder: 'Filter hashes, payloads...',
+            value: searchFilter,
+            onChange: e => setSearchFilter(e.target.value),
+            style: { width: '100%', background: '#000', border: '1px solid #27272a', borderRadius: '0.5rem', padding: '0.6rem 0.8rem', fontSize: '11px', color: '#fff' }
+          }),
+          h('div', { style: { background: '#000', padding: '0.85rem', borderRadius: '0.5rem', border: '1px solid #1e293b' } },
+            h('div', { style: { fontSize: '10px', fontWeight: 900, color: '#60a5fa', marginBottom: '0.4rem' } }, '✦ GEMINI 1.5 PRO CORE'),
+            h('div', { style: { fontSize: '10px', color: '#94a3b8', lineHeight: 1.4 } }, 'Notebook sources loaded. Quiet title standing maintained under RCW 7.28.010.')
+          ),
+          h('div', { style: { background: '#000', padding: '0.85rem', borderRadius: '0.5rem', border: '1px solid #451a03' } },
+            h('div', { style: { fontSize: '10px', fontWeight: 900, color: '#fbbf24', marginBottom: '0.4rem' } }, '⚡ GROK TELEMETRY'),
+            h('div', { style: { fontSize: '10px', color: '#a1a1aa', lineHeight: 1.4 } }, 'Real-time cross-verification active across Tenino and global assets.')
+          )
+        ),
+        h('div', { className: 'hud-card', style: { padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '680px' } },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('div', { style: { fontSize: '10px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Ledger Stream'),
+            h('div', { style: { fontSize: '9px', color: '#71717a' } }, filteredRecords.length + ' items')
+          ),
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', paddingRight: '4px' } },
+            filteredRecords.map(record => {
+              const isGemini = record.engine === "GEMINI_CORE";
+              const isSelected = selectedRecord && selectedRecord.record_id === record.record_id;
+              return h('div', {
+                key: record.record_id,
+                onClick: () => setSelectedRecord(record),
+                style: {
+                  padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid', cursor: 'pointer',
+                  background: isSelected ? '#18181b' : '#09090b',
+                  borderColor: isSelected ? (isGemini ? '#3b82f6' : '#f59e0b') : '#18181b'
+                }
+              },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' } },
+                  h('span', {
+                    style: {
+                      fontSize: '8px', fontWeight: 900, padding: '1px 6px', borderRadius: '3px',
+                      background: isGemini ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                      color: isGemini ? '#60a5fa' : '#fbbf24'
+                    }
+                  }, isGemini ? '✦ GEMINI' : '⚡ GROK'),
+                  h('span', { style: { fontSize: '8px', color: '#52525b' } }, record.timestamp ? record.timestamp.split('T')[1].substring(0, 8) : '')
+                ),
+                h('div', { style: { fontSize: '10px', fontWeight: 800, color: '#e4e4e7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, record.hash.substring(0, 20) + '...')
+              );
+            })
+          )
+        ),
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', minHeight: '500px', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          selectedRecord ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: '1rem' } },
+            h('div', { style: { borderBottom: '1px solid #27272a', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between' } },
+              h('div', null,
+                h('div', { style: { fontSize: '9px', fontWeight: 900, color: selectedRecord.engine === "GEMINI_CORE" ? '#60a5fa' : '#fbbf24' } }, 'VERIFIED BY ' + selectedRecord.engine),
+                h('h2', { style: { fontSize: '1.1rem', fontWeight: 900, color: '#fff', textTransform: 'uppercase', fontStyle: 'italic', marginTop: '2px' } }, 'Manifest Inspector'),
+                h('div', { style: { fontSize: '9px', color: '#52525b', marginTop: '2px' } }, 'ID: ' + selectedRecord.record_id)
+              )
+            ),
+            h('pre', { style: { background: '#000', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #27272a', fontSize: '10px', color: '#d4d4d8', maxHeight: '350px', overflow: 'auto', lineHeight: 1.5 } }, JSON.stringify(selectedRecord.payload, null, 2))
+          ) : h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#52525b', fontSize: '11px' } }, 'Select a record to inspect')
+        )
+      );
+
+      // --- TAB 2 ---
+      let tab2Content = h('div', { className: 'animate-in', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' } },
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Tenino Jurisdiction & Property Nodes'),
+          nodes.map((node, i) =>
+            h('div', {
+              key: i,
+              onClick: () => setSelectedNode(node),
+              style: { background: '#000', border: '1px solid #27272a', padding: '1rem', borderRadius: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }
+            },
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '0.85rem' } },
+                h('div', { style: { width: '32px', height: '32px', background: '#18181b', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' } }, '⌖'),
+                h('div', null,
+                  h('div', { style: { fontSize: '11px', fontWeight: 900, color: '#fff', textTransform: 'uppercase' } }, node.name),
+                  h('div', { style: { fontSize: '9px', color: '#71717a', fontWeight: 700 } }, node.id + ' // ' + node.type)
+                )
+              ),
+              h('div', { style: { fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', border: '1px solid #166534', color: '#4ade80', background: 'rgba(22, 101, 52, 0.2)' } }, node.status)
+            )
+          )
+        ),
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' } },
+          h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Reconciliation & Reclamation Control'),
+          !reclaiming
+            ? h('button', {
+                onClick: () => setReclaiming(true),
+                style: { width: '100%', padding: '0.85rem', background: '#fff', color: '#000', borderRadius: '0.5rem', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase' }
+              }, '✓ Reclaim Perpetual Licenses & IP Space')
+            : h('div', { style: { background: '#000', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '0.5rem' } },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 900, color: '#fff' } },
+                  h('span', null, 'REVERTING AS32121 IP SPACE & CROWDER PLAT...'),
+                  h('span', null, progress + '%')
+                ),
+                h('div', { style: { height: '6px', background: '#27272a', borderRadius: '3px', overflow: 'hidden' } },
+                  h('div', { style: { height: '100%', background: 'linear-gradient(90deg, #3b82f6, #f59e0b)', width: progress + '%', transition: 'width 0.05s' } })
+                )
+              )
+        )
+      );
+
+      // --- TAB 3 ---
+      let tab3Content = h('div', { className: 'animate-in', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' } },
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Foreign Military Deployment Overwatch'),
+          deployments.map(dep =>
+            h('div', {
+              key: dep.deployment_id,
+              onClick: () => triggerOverwatchSweep(dep.deployment_id),
+              style: { background: '#000', border: '1px solid #27272a', padding: '1rem', borderRadius: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }
+            },
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '0.85rem' } },
+                h('div', { style: { width: '32px', height: '32px', background: '#18181b', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' } }, '📡'),
+                h('div', null,
+                  h('div', { style: { fontSize: '11px', fontWeight: 900, color: '#fff', textTransform: 'uppercase' } }, dep.base_name),
+                  h('div', { style: { fontSize: '9px', color: '#71717a', fontWeight: 700 } }, dep.region + ' // ' + dep.coordinates)
+                )
+              ),
+              h('div', { style: { textAlign: 'right' } },
+                h('div', { style: { fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '3px', border: '1px solid #991b1b', color: '#f87171', background: 'rgba(153, 27, 27, 0.2)' } },
+                  activeOverwatch === dep.deployment_id ? 'SWEEPING...' : dep.status
+                ),
+                h('div', { style: { fontSize: '8px', color: '#60a5fa', marginTop: '2px', fontWeight: 800 } }, 'VERIFIER: ' + dep.verifier)
+              )
+            )
+          )
+        ),
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } },
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: '1rem' } },
+            h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Sovereign Intercept Directive'),
+            h('p', { style: { fontSize: '11px', color: '#a1a1aa', lineHeight: 1.5 } }, 'All foreign military installations operating across global sectors are mapped under ROW69 jurisdictional challenge protocols. Active Gemini & Grok overwatch pings intercept telemetry and shunt command signals back to the Northcraft origin axis.')
+          ),
+          h('div', { style: { borderTop: '1px solid #27272a', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 900, color: '#52525b' } },
+            h('span', null, 'STATUS: SECURE'),
+            h('span', { style: { color: '#ef4444' } }, 'NO FOREIGN IMMUNITY')
+          )
+        )
+      );
+
+      // --- TAB 4 ---
+      let tab4Content = h('div', { className: 'animate-in', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' } },
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Sovereign Handle Registry (@ Handles)'),
+          h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem' } },
+            handlesList.map((hName, i) =>
+              h('span', {
+                key: i,
+                onClick: () => setSignedInHandle(hName),
+                style: {
+                  background: signedInHandle === hName ? '#3b82f6' : '#000',
+                  color: signedInHandle === hName ? '#fff' : '#cbd5e1',
+                  border: '1px solid #3f3f46', padding: '0.4rem 0.75rem', borderRadius: '0.5rem',
+                  fontSize: '10px', fontWeight: 900, cursor: 'pointer'
+                }
+              }, hName)
+            )
+          ),
+          h('div', { style: { fontSize: '9px', color: '#71717a', marginTop: '0.5rem' } }, 'Click any handle to assign active session context.')
+        ),
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Symbol & Media Signal Dispatch Matrix'),
+          h('div', { style: { background: '#000', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #27272a', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '250px', overflowY: 'auto' } },
+            symbolsList.map((sym, i) =>
+              h('span', { key: i, style: { fontSize: '1.1rem', padding: '0.25rem 0.5rem', background: '#18181b', borderRadius: '4px', border: '1px solid #27272a' } }, sym)
+            )
+          )
+        )
+      );
+
+      // --- TAB 5 ---
+      let tab5Content = h('div', { className: 'animate-in', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' } },
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#f59e0b', textTransform: 'uppercase' } }, "CHELBI's Amazon.com MYCD Gateway"),
+            h('span', { style: { fontSize: '9px', fontWeight: 900, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #b45309', padding: '2px 6px', borderRadius: '4px' } }, 'SYNCED')
+          ),
+          h('p', { style: { fontSize: '11px', color: '#a1a1aa', lineHeight: 1.4 } }, "Manage Your Content and Devices (MYCD) interface linked directly to sovereign repository #2202-606-28."),
+          h('div', { style: { background: '#000', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '0.75rem' } },
+            h('div', { style: { fontSize: '10px', fontWeight: 900, color: '#fff' } }, 'DEVICE LIBRARY SYNC STATUS'),
+            h('div', { style: { fontSize: '10px', color: '#22c55e' } }, '✓ All 4 Titles Synchronized Across Devices')
+          )
+        ),
+        h('div', { className: 'hud-card', style: { padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' } },
+          h('h2', { style: { fontSize: '11px', fontWeight: 900, color: '#52525b', textTransform: 'uppercase' } }, 'Managed Titles & Documents'),
+          mycdTitles.map(t =>
+            h('div', { key: t.id, style: { background: '#000', border: '1px solid #27272a', padding: '0.85rem', borderRadius: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+              h('div', null,
+                h('div', { style: { fontSize: '11px', fontWeight: 800, color: '#fff' } }, t.title),
+                h('div', { style: { fontSize: '9px', color: '#71717a' } }, t.type)
+              ),
+              h('span', { style: { fontSize: '8px', fontWeight: 900, padding: '2px 6px', borderRadius: '3px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid #1d4ed8' } }, t.status)
+            )
+          )
+        )
+      );
+
+      // Render Active Tab Content
+      let activeContent;
+      if (activeTab === 'pipeline') activeContent = tab1Content;
+      else if (activeTab === 'audit') activeContent = tab2Content;
+      else if (activeTab === 'military') activeContent = tab3Content;
+      else if (activeTab === 'handles') activeContent = tab4Content;
+      else if (activeTab === 'amazon') activeContent = tab5Content;
+
+      return h('div', { style: { maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column' } },
+        header,
+        tabNav,
+        activeContent
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+  </script>
+</body>
+</html>
